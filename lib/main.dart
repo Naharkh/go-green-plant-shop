@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'ar_plant_select.dart';
+import 'plant_catalog.dart';
 // Removed unused import
 
 void main() {
