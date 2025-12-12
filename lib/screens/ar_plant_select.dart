@@ -1,6 +1,6 @@
 // ar_plant_select.dart
 import 'package:flutter/material.dart';
-import 'plant.dart'; // Your existing plant.dart file
+import '../services/plant_service.dart';
 
 class ARPlantSelectPage extends StatelessWidget {
   const ARPlantSelectPage({super.key});
@@ -57,9 +57,9 @@ class ARPlantSelectPage extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: plants.length,
+              itemCount: PlantService.getPlants().length,
               itemBuilder: (context, index) {
-                final plant = plants[index];
+                final plant = PlantService.getPlants()[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   elevation: 2,
@@ -119,7 +119,7 @@ class ARPlantSelectPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => SimpleARPage(plant: plant),
+                          builder: (context) => ARDetailPage(plant: plant),
                         ),
                       );
                     },
@@ -186,11 +186,12 @@ class ARPlantSelectPage extends StatelessWidget {
     );
   }
 
-  // Add this at the end of ar_plant_select.dart
-class SimpleARPage extends StatelessWidget {
-  final Plant plant;
+}
+
+class ARDetailPage extends StatelessWidget {
+  final dynamic plant;
   
-  const SimpleARPage({super.key, required this.plant});
+  const ARDetailPage({super.key, required this.plant});
 
   @override
   Widget build(BuildContext context) {
@@ -244,5 +245,4 @@ class SimpleARPage extends StatelessWidget {
       ),
     );
   }
-}
 }

@@ -1,20 +1,15 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart'; // Add this to pubspec.yaml
-import '../models/plant.dart';
 
 class ARViewPage extends StatefulWidget {
-  final Plant plant;
+  final dynamic plant;
   
   const ARViewPage({super.key, required this.plant});
 
   @override
-  _ARViewPageState createState() => _ARViewPageState();
+  State<ARViewPage> createState() => _ARViewPageState();
 }
 
-class _ARViewPageState extends State<ARViewPage> with WidgetsBindingObserver {
-  CameraController? _cameraController;
-  bool _isCameraReady = false;
+class _ARViewPageState extends State<ARViewPage> {
   bool _plantPlaced = false;
   double _plantSize = 100.0;
   Offset _plantPosition = Offset.zero;
@@ -22,37 +17,11 @@ class _ARViewPageState extends State<ARViewPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
   }
-  
+
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _cameraController?.dispose();
     super.dispose();
-  }
-  
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      final firstCamera = cameras.first;
-      
-      _cameraController = CameraController(
-        firstCamera,
-        ResolutionPreset.medium,
-      );
-      
-      await _cameraController!.initialize();
-      
-      if (mounted) {
-        setState(() {
-          _isCameraReady = true;
-        });
-      }
-    } catch (e) {
-      print('Error initializing camera: $e');
-    }
   }
   
   @override
@@ -61,6 +30,7 @@ class _ARViewPageState extends State<ARViewPage> with WidgetsBindingObserver {
       appBar: AppBar(
         title: Text('AR View: ${widget.plant.name}'),
         backgroundColor: Colors.green[800],
+        foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -77,223 +47,209 @@ class _ARViewPageState extends State<ARViewPage> with WidgetsBindingObserver {
             ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Camera Preview
-          if (_isCameraReady && _cameraController != null)
-            CameraPreview(_cameraController!)
-          else
+      body: GestureDetector(
+        onTapDown: (details) {
+          if (!_plantPlaced) {
+            setState(() {
+              _plantPosition = details.localPosition;
+              _plantPlaced = true;
+            });
+          }
+        },
+        child: Stack(
+          children: [
+            // AR Background
             Container(
-              color: Colors.black,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.blue[100]!,
+                    Colors.green[100]!,
+                  ],
+                ),
+              ),
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading camera...',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
+                child: Icon(
+                  Icons.landscape,
+                  size: 100,
+                  color: Colors.grey[300],
                 ),
               ),
             ),
-          
-          // Instructions Overlay
-          if (!_plantPlaced)
-            Positioned(
-              top: 20,
-              left: 20,
-              right: 20,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Tap anywhere to place the plant',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Move your phone to find a flat surface',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
-          // Plant Visualization
-          if (_plantPlaced)
-            Positioned(
-              left: _plantPosition.dx - _plantSize / 2,
-              top: _plantPosition.dy - _plantSize / 2,
-              child: GestureDetector(
-                onScaleUpdate: (details) {
-                  setState(() {
-                    _plantSize = (100 * details.scale).clamp(50.0, 300.0);
-                  });
-                },
+            
+            // Instructions Overlay
+            if (!_plantPlaced)
+              Center(
                 child: Container(
-                  width: _plantSize,
-                  height: _plantSize,
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.green.withOpacity(0.6),
-                    border: Border.all(
-                      color: Colors.green[800]!,
-                      width: 3,
-                    ),
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.eco,
-                          size: _plantSize * 0.5,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        size: 50,
+                        color: Colors.green[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tap anywhere to place the plant',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
                           color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          widget.plant.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: _plantSize * 0.1,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Pinch to resize',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          
-          // Plant Info Card
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: Card(
-              elevation: 5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.green[100],
-                        borderRadius: BorderRadius.circular(10),
+            
+            // Plant Visualization
+            if (_plantPlaced)
+              Positioned(
+                left: _plantPosition.dx - _plantSize / 2,
+                top: _plantPosition.dy - _plantSize / 2,
+                child: GestureDetector(
+                  onScaleUpdate: (details) {
+                    setState(() {
+                      _plantSize = (100 * details.scale).clamp(50.0, 300.0);
+                    });
+                  },
+                  child: Container(
+                    width: _plantSize,
+                    height: _plantSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.green.withValues(alpha: 0.6),
+                      border: Border.all(
+                        color: Colors.green[800]!,
+                        width: 3,
                       ),
-                      child: Icon(
-                        Icons.eco,
-                        size: 40,
-                        color: Colors.green[600],
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    child: Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            widget.plant.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Colors.green[900],
-                            ),
+                          Icon(
+                            Icons.eco,
+                            size: _plantSize * 0.5,
+                            color: Colors.white,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.plant.description,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '\$${widget.plant.price}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.green[800],
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              widget.plant.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: _plantSize * 0.1,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
+                ),
+              ),
+            
+            // Plant Info Card
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.plant.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A4D2E),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Price: \$${widget.plant.price}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('${widget.plant.name} added to cart!'),
+                                  backgroundColor: Colors.green[700],
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Add to Cart'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (!_plantPlaced) {
-            // Show a dialog to simulate surface detection
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Place Plant'),
-                content: Text('Tap on the screen where you want to place ${widget.plant.name}'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        _plantPlaced = true;
-                        _plantPosition = Offset(
-                          MediaQuery.of(context).size.width / 2,
-                          MediaQuery.of(context).size.height / 2,
-                        );
-                      });
-                    },
-                    child: Text('Place Here'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-        },
-        backgroundColor: _plantPlaced ? Colors.blue : Colors.green,
-        child: Icon(
-          _plantPlaced ? Icons.check : Icons.add,
-          color: Colors.white,
+          ],
         ),
       ),
     );

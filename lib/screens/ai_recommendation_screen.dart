@@ -25,7 +25,7 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
 IF PLANT IS VISIBLE:
 1. PLANT IDENTIFICATION: Identify the plant type (scientific name if possible)
 2. HEALTH STATUS: Check for diseases, pests, or nutrient deficiencies (yellowing, spots, wilting, etc.)
-3. HEALING TIPS: If sick, provide 2-3 specific, actionable steps to heal it (watering, pruning, treatment)
+3. HEALING TIPS: If sick, provide 2-3 specific actionable steps to heal it (watering, pruning, treatment)
 4. CARE RECOMMENDATIONS: Best practices for this plant
 
 IF NO PLANT VISIBLE (just environment):
