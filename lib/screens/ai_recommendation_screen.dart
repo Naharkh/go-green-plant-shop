@@ -1,7 +1,5 @@
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -15,31 +13,35 @@ class AIRecommendationScreen extends StatefulWidget {
 
 class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
 
-    final String _visionApiKey = 'AIzaSyB_rOnM0vBdSpDrGGCXUUbY3JEMEGPDstA';
-
     Future<String?> _analyzeImageWithVision(XFile image) async {
       try {
         final bytes = await image.readAsBytes();
-        final base64Image = base64Encode(bytes);
+        final gemini = Gemini.instance;
 
-        final _gemini = Gemini.instance;
+        final res = await gemini.textAndImage(
+          text:
+              """Analyze this image and provide:
 
-        print('Sending image to Gemini for analysis...');
-        
-        var res = await _gemini.textAndImage(
-        text: "Analyze this image and provide plant recommendations. The available plants for recommendation are: 1. Snake Plant, 2. Spider Plant, 3. Peace Lily, 4. Aloe Vera, 5. Pothos. Suggest the best matches based on the image content. Provide a short answer in a concise manner with a list of recommendations and a short description for the reasons.",
-        images: [bytes],
+IF PLANT IS VISIBLE:
+1. PLANT IDENTIFICATION: Identify the plant type (scientific name if possible)
+2. HEALTH STATUS: Check for diseases, pests, or nutrient deficiencies (yellowing, spots, wilting, etc.)
+3. HEALING TIPS: If sick, provide 2-3 specific, actionable steps to heal it (watering, pruning, treatment)
+4. CARE RECOMMENDATIONS: Best practices for this plant
+
+IF NO PLANT VISIBLE (just environment):
+1. ENVIRONMENT ANALYSIS: Describe lighting (bright/dim/indirect), temperature (warm/cool), humidity, space type
+2. RECOMMENDED PLANTS: Suggest 3-4 plants that fit this environment perfectly
+3. WHY THESE PLANTS: Brief reason for each recommendation
+
+Keep answers SHORT and PRODUCTIVE. Use bullet points. Max 150 words.""",
+          images: [bytes],
         );
 
-
-        
         return res?.output;
-
-    
-       } catch (e) {
-         debugPrint('Vision API exception: $e');
-         return null;
-       }
+      } catch (e) {
+        debugPrint('AI analysis exception: $e');
+        return null;
+      }
     }
 
   bool _isLoading = false;
@@ -51,6 +53,7 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
     // Request camera and photos permissions at runtime
     final cameraStatus = await Permission.camera.request();
     final photosStatus = await Permission.photos.request();
+    if (!mounted) return;
     if (!cameraStatus.isGranted && !photosStatus.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -77,6 +80,7 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
       if (image == null) {
         // Fallback: try picking from gallery
         image = await picker.pickImage(source: ImageSource.gallery);
+        if (!mounted) return;
         if (image == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -90,38 +94,43 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
           return;
         }
       }
+      if (!mounted) return;
       setState(() {
         _cameraImage = image;
+        _isLoading = true;
       });
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Analyzing your photo...'),
-          duration: Duration(seconds: 1),
+          backgroundColor: Color(0xFF1A4D2E),
+          duration: Duration(seconds: 3),
         ),
       );
       
       final result = await _analyzeImageWithVision(image);
+      if (!mounted) return;
       if (result != null) {
-        
         setState(() {
           _recommendation = result;
           _recommendedPlants = [];
-
+          _isLoading = false;
         });
       } else {
         setState(() {
           _recommendation = 'Analysis failed. Please try again.';
           _recommendedPlants = [];
+          _isLoading = false;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Camera error: $e'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
       setState(() {
         _isLoading = false;
       });
@@ -266,6 +275,29 @@ class _AIRecommendationScreenState extends State<AIRecommendationScreen> {
                   child: const Text('Retake Photo'),
                 ),
                 const SizedBox(height: 24),
+
+                // Loading Indicator
+                if (_isLoading)
+                  Center(
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF1A4D2E),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Analyzing your photo...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1A4D2E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // AI Recommendation Text
                 if (_recommendation != null) ...[

@@ -20,6 +20,7 @@ class _PlantCardState extends State<PlantCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _elevationAnimation;
 
   @override
   void initState() {
@@ -28,7 +29,12 @@ class _PlantCardState extends State<PlantCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _elevationAnimation = Tween<double>(begin: 0, end: 8).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -39,6 +45,42 @@ class _PlantCardState extends State<PlantCard>
     super.dispose();
   }
 
+  void _onTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+    _navigateToDetail();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  void _navigateToDetail() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ProductDetailScreen(plant: widget.plant),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.3),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -47,33 +89,9 @@ class _PlantCardState extends State<PlantCard>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: GestureDetector(
-            onTapDown: (_) => _controller.forward(),
-            onTapUp: (_) {
-              _controller.reverse();
-              Navigator.of(context).push(
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      ProductDetailScreen(plant: widget.plant),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                              parent: animation, curve: Curves.easeOutCubic),
-                        ),
-                        child: child,
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-            onTapCancel: () => _controller.reverse(),
+            onTapDown: _onTapDown,
+            onTapUp: _onTapUp,
+            onTapCancel: _onTapCancel,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -82,33 +100,36 @@ class _PlantCardState extends State<PlantCard>
                   BoxShadow(
                     color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4 + _elevationAnimation.value),
                   ),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Plant Image
+                  // Plant Image with Hero animation
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
                     ),
                     child: Stack(
                       children: [
-                        widget.plant.imageUrl.startsWith('assets')
-                            ? Image.asset(
-                                widget.plant.imageUrl,
-                                height: 100,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.network(
-                                widget.plant.imageUrl,
-                                height: 100,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                        Hero(
+                          tag: 'plant_${widget.plant.id}',
+                          child: widget.plant.imageUrl.startsWith('assets')
+                              ? Image.asset(
+                                  widget.plant.imageUrl,
+                                  height: 100,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  widget.plant.imageUrl,
+                                  height: 100,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
                         Positioned(
                           top: 8,
                           right: 8,
@@ -146,8 +167,8 @@ class _PlantCardState extends State<PlantCard>
 
                   // Plant Info
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

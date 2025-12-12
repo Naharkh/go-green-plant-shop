@@ -36,6 +36,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         status = await Permission.photos.request();
       }
       if (!status.isGranted) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gallery permission denied.')),
         );

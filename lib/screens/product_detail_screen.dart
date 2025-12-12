@@ -40,7 +40,9 @@ class ProductDetailScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   image: DecorationImage(
-                    image: NetworkImage(plant.imageUrl),
+                    image: plant.imageUrl.startsWith('assets')
+                        ? AssetImage(plant.imageUrl) as ImageProvider
+                        : NetworkImage(plant.imageUrl),
                     fit: BoxFit.cover,
                   ),
                 ),

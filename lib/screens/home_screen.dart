@@ -11,8 +11,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCategory = 'Popular';
+  String _selectedCategory = 'All';
   final List<String> _categories = [
+    'All',
     'Popular',
     'New Arrivals',
     'Low Maintenance',
@@ -20,7 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final plants = PlantService.getPlantsByCategory(_selectedCategory);
+    final plants = _selectedCategory == 'All'
+        ? PlantService.getPlants()
+        : PlantService.getPlantsByCategory(_selectedCategory);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,14 +32,14 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1A4D2E),
+            color: Color.fromARGB(255, 56, 151, 94),
           ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: CircleAvatar(
-              backgroundColor: const Color(0xFF1A4D2E),
+              backgroundColor: const Color.fromARGB(255, 48, 137, 84),
               child: const Icon(
                 Icons.local_florist,
                 color: Colors.white,
@@ -59,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.1),
+                      color: const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -88,11 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ChoiceChip(
                         label: Text(category),
                         selected: _selectedCategory == category,
-                        selectedColor: const Color(0xFF1A4D2E),
+                        selectedColor: const Color.fromARGB(255, 56, 151, 94),
+                        backgroundColor: const Color.fromARGB(255, 60, 173, 94),
                         labelStyle: TextStyle(
                           color: _selectedCategory == category
                               ? Colors.white
-                              : const Color.fromARGB(255, 146, 146, 146),
+                              : const Color.fromARGB(255, 0, 0, 0),
                           fontWeight: FontWeight.w500,
                         ),
                         onSelected: (selected) {
